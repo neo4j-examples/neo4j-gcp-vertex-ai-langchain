@@ -1,0 +1,195 @@
+openapi: "3.1.0"
+info:
+  version: 1.0.0
+  title: neo4j_extension
+  description: Service for company news information, industries, articles, people at the companies and more.
+servers:
+  - url: { service_url }
+paths:
+  /companies:
+    get:
+      operationId: companies
+      description: List of Companies (id, name, summary) by fulltext search
+      parameters:
+        - name: search
+          in: query
+          description: Part of a name of a company to search for
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Returns List of Companies (id, name, summary) as JSON
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    summary:
+                      type: string
+  /industries:
+    get:
+      operationId: industries
+      description: List of Industry names
+      responses:
+        "200":
+          description: Returns List of Industry Names as JSON
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+  /companies_in_industry:
+    get:
+      operationId: companies_in_industry
+      description: List of Companies (id, name, summary) in a certain industry by name
+      parameters:
+        - name: industry
+          in: query
+          description: Exact industry name from the industries operation
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Returns List of Companies (id, name, summary) as JSON
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    summary:
+                      type: string
+  /articles_in_month:
+    get:
+      operationId: articles_in_month
+      description: List of Articles (id, author, title, date, sentiment) in a month timeframe from the given date
+      parameters:
+        - name: date
+          in: query
+          description: Start date of the month in yyyy-mm-dd format, e.g. 2021-01-01
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Returns List of Articles (id, author, title, date, sentiment) as JSON
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    author:
+                      type: string
+                    title:
+                      type: string
+                    date:
+                      type: string
+                    sentiment:
+                      type: number
+  /article:
+    get:
+      operationId: article
+      description: Single Article details (id, author, title, date, sentiment, site, summary, content) by article id
+      parameters:
+        - name: id
+          in: query
+          description: Single article id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Single Article details (id, author, title, date, sentiment, site, summary, content) as JSON
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    author:
+                      type: string
+                    title:
+                      type: string
+                    date:
+                      type: string
+                    site:
+                      type: string
+                    summary:
+                      type: string
+                    content:
+                      type: string
+                    sentiment:
+                      type: number
+  /companies_in_articles:
+    get:
+      operationId: companies_in_articles
+      description: Companies (id, name, summary) mentioned in articles by list of article ids
+      parameters:
+        - name: ids
+          in: query
+          description: Comma separated list of article ids
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Returns List of Companies (id, name, summary) as JSON
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    summary:
+                      type: string
+  /people_at_company:
+    get:
+      operationId: people_at_company
+      description: People (name, role) associated with a company by company id
+      parameters:
+        - name: id
+          in: query
+          description: Single company id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: People (name, role) associated with a company as JSON
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    role:
+                      type: string
