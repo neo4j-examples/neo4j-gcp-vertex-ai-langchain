@@ -1,0 +1,12 @@
+[project]
+name = "toolbox-companies"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "google-crc32c>=1.6.0",
+    "langchain-google-vertexai>=2.0.13",
+    "langgraph>=0.2.72",
+    "toolbox-langchain>=0.1.0",
+]

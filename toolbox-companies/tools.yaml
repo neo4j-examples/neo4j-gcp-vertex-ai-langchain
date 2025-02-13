@@ -1,0 +1,102 @@
+sources:
+  companies-graph:
+    kind: "neo4j"
+    uri: "neo4j+s://demo.neo4jlabs.com"
+    user: "companies"
+    password: "companies"
+    database: "companies"
+
+tools:
+  industries:
+    kind: neo4j-cypher
+    source: companies-graph
+    statement: |
+      MATCH (i:IndustryCategory) 
+      RETURN i.name as industry
+    description: List of Industry names
+
+  companies_in_industry:
+    kind: neo4j-cypher
+    source: companies-graph
+    statement: |
+      MATCH (:IndustryCategory {name:$industry})<-[:HAS_CATEGORY]-(c) 
+      WHERE NOT EXISTS { (c)<-[:HAS_SUBSIDARY]-() }
+      RETURN c.id, c.name, c.summary
+    description: Companies (id, name, summary) in a given industry by industry
+    parameters:
+      - name: industry
+        type: string
+        description: Industry name to filter companies by
+
+  companies:
+    kind: neo4j-cypher
+    source: companies-graph
+    statement: |
+      CALL db.index.fulltext.queryNodes('entity', $search, {limit: 100}) 
+      YIELD node as c, score WHERE c:Organization 
+      AND NOT EXISTS { (c)<-[:HAS_SUBSIDARY]-() }
+      RETURN c.id, c.name, c.summary
+    description: List of Companies (id, name, summary) by fulltext search
+    parameters:
+      - name: search
+        type: string
+        description: Part of a name of a company to search for
+
+  articles_in_month:
+    kind: neo4j-cypher
+    source: companies-graph
+    statement: |
+      MATCH (a:Article)
+      WHERE date($date) <= date(a.date) < date($date) + duration('P1M')
+      RETURN a.id as id, a.author as author, a.title as title, toString(a.date) as date, a.sentiment as sentiment
+      LIMIT 25
+    description: List of Articles (id, author, title, date, sentiment) in a month timeframe from the given date
+    parameters:
+      - name: date
+        type: string
+        description: Start date in yyyy-mm-dd format
+
+  article:
+    kind: neo4j-cypher
+    source: companies-graph
+    statement: |
+      MATCH (a:Article)-[:HAS_CHUNK]->(c:Chunk)
+      WHERE a.id = $id
+      WITH a, c ORDER BY id(c) ASC
+      WITH a, collect(c.text) as contents
+      RETURN a.id as id, a.author as author, a.title as title, toString(a.date) as date,
+      a.summary as summary, a.siteName as site, a.sentiment as sentiment, apoc.text.join(contents, ' ') as content
+    description: Single Article details (id, author, title, date, sentiment, site, summary, content) by article id
+    parameters:
+      - name: id
+        type: string
+        description: ID of the article to retrieve
+
+  companies_in_articles:
+    kind: neo4j-cypher
+    source: companies-graph
+    statement: |
+      MATCH (a:Article)-[:MENTIONS]->(c)
+      WHERE a.id in $ids AND not exists { (c)<-[:HAS_SUBSIDARY]-() }
+      RETURN c.id as id, c.name as name, c.summary as summary
+    description: Companies (id, name, summary) mentioned in articles by list of article ids
+    parameters:
+      - name: ids
+        type: array
+        description: List of article ids to find companies mentioned in
+        items:
+          name: id 
+          type: string
+          description: Id of the company. 
+
+  people_at_company:
+    kind: neo4j-cypher
+    source: companies-graph
+    statement: |
+      MATCH (c:Organization)-[role]-(p:Person) WHERE c.id = $id
+      RETURN replace(type(role),"HAS_","") as role, p.name as name
+    description: People (name, role) associated with a company by company id
+    parameters:
+      - name: id
+        type: string
+        description: Company id to find associated people for
