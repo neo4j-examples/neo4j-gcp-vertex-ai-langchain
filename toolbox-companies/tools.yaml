@@ -21,8 +21,8 @@ tools:
     statement: |
       MATCH (:IndustryCategory {name:$industry})<-[:HAS_CATEGORY]-(c) 
       WHERE NOT EXISTS { (c)<-[:HAS_SUBSIDARY]-() }
-      RETURN c.id, c.name, c.summary
-    description: Companies (id, name, summary) in a given industry by industry
+      RETURN c.id as company_id, c.name as name, c.summary as summary
+    description: Companies (company_id, name, summary) in a given industry by industry
     parameters:
       - name: industry
         type: string
@@ -35,8 +35,8 @@ tools:
       CALL db.index.fulltext.queryNodes('entity', $search, {limit: 100}) 
       YIELD node as c, score WHERE c:Organization 
       AND NOT EXISTS { (c)<-[:HAS_SUBSIDARY]-() }
-      RETURN c.id, c.name, c.summary
-    description: List of Companies (id, name, summary) by fulltext search
+      RETURN c.id as company_id, c.name as name, c.summary as summary
+    description: List of Companies (company_id, name, summary) by fulltext search
     parameters:
       - name: search
         type: string
@@ -48,9 +48,9 @@ tools:
     statement: |
       MATCH (a:Article)
       WHERE date($date) <= date(a.date) < date($date) + duration('P1M')
-      RETURN a.id as id, a.author as author, a.title as title, toString(a.date) as date, a.sentiment as sentiment
+      RETURN a.id as article_id, a.author as author, a.title as title, toString(a.date) as date, a.sentiment as sentiment
       LIMIT 25
-    description: List of Articles (id, author, title, date, sentiment) in a month timeframe from the given date
+    description: List of Articles (article_id, author, title, date, sentiment) in a month timeframe from the given date
     parameters:
       - name: date
         type: string
@@ -61,14 +61,14 @@ tools:
     source: companies-graph
     statement: |
       MATCH (a:Article)-[:HAS_CHUNK]->(c:Chunk)
-      WHERE a.id = $id
+      WHERE a.id = $article_id
       WITH a, c ORDER BY id(c) ASC
       WITH a, collect(c.text) as contents
-      RETURN a.id as id, a.author as author, a.title as title, toString(a.date) as date,
+      RETURN a.id as article_id, a.author as author, a.title as title, toString(a.date) as date,
       a.summary as summary, a.siteName as site, a.sentiment as sentiment, apoc.text.join(contents, ' ') as content
-    description: Single Article details (id, author, title, date, sentiment, site, summary, content) by article id
+    description: Single Article details (article_id, author, title, date, sentiment, site, summary, content) by article id
     parameters:
-      - name: id
+      - name: article_id
         type: string
         description: ID of the article to retrieve
 
@@ -77,26 +77,26 @@ tools:
     source: companies-graph
     statement: |
       MATCH (a:Article)-[:MENTIONS]->(c)
-      WHERE a.id in $ids AND not exists { (c)<-[:HAS_SUBSIDARY]-() }
-      RETURN c.id as id, c.name as name, c.summary as summary
-    description: Companies (id, name, summary) mentioned in articles by list of article ids
+      WHERE a.id = $article_id AND not exists { (c)<-[:HAS_SUBSIDARY]-() }
+      RETURN c.id as company_id, c.name as name, c.summary as summary
+    description: Companies (company_id, name, summary) mentioned in articles by article id
     parameters:
-      - name: ids
-        type: array
-        description: List of article ids to find companies mentioned in
-        items:
-          name: id 
-          type: string
-          description: Id of the company. 
+      - name: article_id
+        type: string
+        description: Article id to find companies mentioned in
+#        items:
+#          name: id 
+#          type: string
+#          description: Id of the company. 
 
   people_at_company:
     kind: neo4j-cypher
     source: companies-graph
     statement: |
-      MATCH (c:Organization)-[role]-(p:Person) WHERE c.id = $id
-      RETURN replace(type(role),"HAS_","") as role, p.name as name
-    description: People (name, role) associated with a company by company id
+      MATCH (c:Organization)-[role]-(p:Person) WHERE c.id = $company_id
+      RETURN replace(type(role),"HAS_","") as role, p.name as person_name, c.id as company_id, c.name as company_name
+    description: People (person_name, role, company_id, company_name) associated with a company by company id
     parameters:
-      - name: id
+      - name: company_id
         type: string
         description: Company id to find associated people for
